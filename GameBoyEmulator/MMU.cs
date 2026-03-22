@@ -11,7 +11,7 @@
     public byte Read(ushort address)
     {
         if (address >= 0x0000 && address < 0x8000) // ROM
-            return _rom[address - 0x000];
+            return _rom[address - 0x0000];
         else if (address >= 0x8000 && address < 0xA000) // VRAM
             return _vram[address - 0x8000];
         else if (address >= 0xC000 && address < 0xE000) // WRAM
