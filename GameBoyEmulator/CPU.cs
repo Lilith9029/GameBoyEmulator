@@ -1,4 +1,7 @@
-﻿public class CPU
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Intrinsics.X86;
+
+public class CPU
 {
     // 8-bit registers
     public byte A, B, C, D, E, H, L;
@@ -91,6 +94,19 @@
         return (ushort)(hi << 8 | lo);
     }
 
+    private ushort PopWord()
+    { 
+        byte lo = _mmu.Read(SP++);
+        byte hi = _mmu.Read(SP++);
+        return (ushort)(hi << 8 | lo);
+    }
+
+    private void PushPC()
+    {
+        _mmu.Write(--SP, (byte)(PC >> 8)); // High byte
+        _mmu.Write(--SP, (byte)(PC & 0xFF)); // Low byte
+    }
+
     public int ExecuteNext()
     {
         byte opcode = _mmu.Read(PC++);
@@ -115,26 +131,36 @@
                 return LD_rr_A(DE);
             case 0x16: // LD D, n8
                 return LD_r_n(ref D);
+            case 0x18: // JR e8
+                return JR_e8();
             case 0x1A: // LD A, (DE)
                 return LD_A_rr(DE);
             case 0x1E: // LD E, n8
                 return LD_r_n(ref E);
+            case 0x20: // JR NZ, e8
+                return JR_NZ_e8();
             case 0x21: // LD HL, n16
                 return LD_rr_nn(HL);
             case 0x22: // LD (HL+), A
                 return LD_HLI_A();
             case 0x26: // LD H, n8
                 return LD_r_n(ref H);
+            case 0x28: // JR Z, e8
+                return JR_Z_e8();
             case 0x2A: // LD A, (HL+)
                 return LD_A_HLI();
             case 0x2E: // LD L, n8
                 return LD_r_n(ref L);
+            case 0x30: // JR NC, e8
+                return JR_NC_e8();  
             case 0x31: // LD SP, n16
                 return LD_rr_nn(SP);
             case 0x32: // LD (HL-), A
                 return LD_HLD_A();
             case 0x36: // LD (HL), n8
                 return LD_HL_n();
+            case 0x38: // JR C, e8
+                return JR_C_e8();
             case 0x3A: // LD A, (HL-)
                 return LD_A_HLD();
             case 0x3E: // LD A, n8
@@ -265,14 +291,46 @@
                 return LD_r_HL(ref A);
             case 0x7F: // LD A, A
                 return LD_r_r(ref A, A);
+            case 0xC0: // RET NZ
+                return RET_NZ();
             case 0xC1: // POP BC
                 return POP_rr(ref B, ref C);
+            case 0xC2: // JP NZ, a16
+                return JP_NZ_a16();
+            case 0xC3: // JP a16
+                return JP_a16();
+            case 0xC4: // CALL NZ, a16
+                return CALL_NZ_a16();
             case 0xC5: // PUSH BC
                 return PUSH_rr(ref B, ref C);
+            case 0xC8: // RET Z
+                return RET_Z();
+            case 0xC9: // RET
+                return RET();
+            case 0xCA: // JP Z, a16
+                return JP_Z_a16();
+            case 0xCC: // CALL Z, a16
+                return CALL_Z_a16();
+            case 0xCD: // CALL a16
+                return CALL_a16();
+            case 0xD0: // RET NC
+                return RET_NC();
             case 0xD1: // POP DE
                 return POP_rr(ref D, ref E);
+            case 0xD2: // JP NC, a16
+                return JP_NC_a16();
+            case 0xD4: // CALL NC, a16
+                return CALL_NC_a16();
             case 0xD5: // PUSH DE
                 return PUSH_rr(ref D, ref E);
+            case 0xD8: // RET C
+                return RET_C();
+            case 0xD9: // RETI
+                return RETI();
+            case 0xDA: // JP C, a16
+                return JP_C_a16();
+            case 0xDC: // CALL C, a16
+                return CALL_C_a16();    
             case 0xE0: // LDH (a8), A
                 return LDH_a8_A();
             case 0xE1: // POP HL
@@ -281,6 +339,8 @@
                 return LDH_C_A();
             case 0xE5: // PUSH HL
                 return PUSH_rr(ref H, ref L);
+            case 0xE9: // JP HL
+                return JP_HL();
             case 0xEA: // LD (a16), A
                 return LD_a16_A();
             case 0xF0: // LDH A, (a8)
@@ -470,5 +530,156 @@
         FlagH = ((SP & 0x0F) + (e8 & 0x0F)) > 0x0F;
         FlagC = ((SP & 0xFF) + (e8 & 0xFF)) > 0xFF;
         return 12;
+    }
+
+    //  Jumps / calls
+    // JP (Jump) instructions
+    private int JP_NZ_a16() // JP NZ, a16 -> 0xC2
+    {
+        if (!FlagZ) { PC = Fetch16(); return 16; }
+        PC += 2;
+        return 12;
+    }
+
+    private int JP_a16() // JP a16 -> 0xC3
+    {
+        PC = Fetch16();
+        return 16;
+    }
+
+    private int JP_Z_a16() // JP Z, a16 -> 0xCA
+    {
+        if (FlagZ) { PC = Fetch16(); return 16; }
+        PC += 2;
+        return 12;
+    }
+
+    private int JP_NC_a16()
+    {
+        if (!FlagC) { PC = Fetch16(); return 16; }
+        PC += 2;
+        return 12;
+    }
+
+    private int JP_C_a16()
+    {
+        if (FlagC) { PC = Fetch16(); return 16; }
+        PC += 2;
+        return 12;
+    }
+
+    private int JP_HL()
+    {
+        PC = HL;
+        return 4;
+    }
+
+    // JR (Relative Jump) instructions
+    private int JR_e8() // JR e8 -> 0x18
+    {
+        PC += (ushort)(sbyte)Fetch();
+        return 12;
+    }
+
+    private int JR_NZ_e8() // JR NZ, e8 -> 0x20
+    {
+        if (!FlagZ) { PC += (ushort)(sbyte)Fetch(); return 12; }
+        PC++;
+        return 8;
+    }
+
+    private int JR_Z_e8() // JR Z, e8 -> 0x28
+    {
+        if (FlagZ) { PC += (ushort)(sbyte)Fetch(); return 12; }
+        PC++;
+        return 8;
+    }
+
+    private int JR_NC_e8() // JR NC, e8 -> 0x30
+    {
+        if (!FlagC) { PC += (ushort)(sbyte)Fetch(); return 12; }
+        PC++;
+        return 8;
+    }
+
+    private int JR_C_e8() // JR C, e8 -> 0x38
+    {
+        if (FlagC) { PC += (ushort)(sbyte)Fetch(); return 12; }
+        PC++;
+        return 8;
+    }
+
+    // CALL instructions
+    private int CALL_NZ_a16() // CALL NZ, a16 -> 0xC4
+    {
+        if (!FlagZ) { PushPC(); PC = Fetch16(); return 24; }
+        PC += 2;
+        return 12;
+    }
+
+    private int CALL_Z_a16() // CALL Z, a16 -> 0xCC
+    {
+        if (FlagZ) { PushPC(); PC = Fetch16(); return 24; }
+        PC += 2;
+        return 12;
+    }
+
+    private int CALL_a16() // CALL a16 -> 0xCD
+    {
+        PushPC();
+        PC = Fetch16();
+        return 24;
+    }
+
+    private int CALL_NC_a16() // CALL NC, a16 -> 0xD4
+    {
+        if (!FlagC) { PushPC(); PC = Fetch16(); return 24; }
+        PC += 2;
+        return 12;
+    }
+
+    private int CALL_C_a16() // CALL C, a16 -> 0xDA
+    {       
+        if (FlagC) { PushPC(); PC = Fetch16(); return 24; }
+        PC += 2;
+        return 12;
+    }
+
+    // RET/RETI instructions
+    private int RET_NZ()
+    {
+        if (!FlagZ) { PC = PopWord(); return 20; }
+        return 8;
+    }
+
+    private int RET_Z()
+    {
+        if (FlagZ) { PC = PopWord(); return 20; }
+        return 8;
+    }
+
+    private int RET()
+    {
+        PC = PopWord();
+        return 16;
+    }
+
+    private int RET_NC()
+    {
+        if (!FlagC) { PC = PopWord(); return 20; }
+        return 8;
+    }
+
+    private int RET_C()
+    {
+        if (FlagC) { PC = PopWord(); return 20; }
+        return 8;
+    }
+
+    private int RETI()
+    {
+        PC = PopWord();
+        _ime = true; // Enable interrupts after returning
+        return 16;
     }
 }
