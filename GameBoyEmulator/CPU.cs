@@ -69,7 +69,7 @@
     public CPU(MMU mmu)
     {
         A = 0x01;
-        F = 0xB0; // Initial flags: Z=1, N=0, H=1, C=1
+        F = 0x00; // Initial flags: Z=1, N=0, H=1, C=1 (0x00 for DMG, 0xB0 for CGB)
         BC = 0x0013;
         DE = 0x00D8;
         HL = 0x014D;
@@ -97,14 +97,20 @@
 
         switch (opcode)
         {
+            case 0x01: // LD BC, n16
+                return LD_rr_nn(BC);
             case 0x02: // LD (BC), A
                 return LD_rr_A(BC);
             case 0x06: // LD B, n8
                 return LD_r_n(ref B);
+            case 0x09: // LD DE, HL
+                return LD_a16_rr(DE);
             case 0x0A: // LD A, (BC)
                 return LD_A_rr(BC);
             case 0x0E: // LD C, n8
                 return LD_r_n(ref C);
+            case 0x11: // LD DE, n16
+                return LD_rr_nn(DE);
             case 0x12: // LD (DE), A
                 return LD_rr_A(DE);
             case 0x16: // LD D, n8
@@ -113,6 +119,8 @@
                 return LD_A_rr(DE);
             case 0x1E: // LD E, n8
                 return LD_r_n(ref E);
+            case 0x21: // LD HL, n16
+                return LD_rr_nn(HL);
             case 0x22: // LD (HL+), A
                 return LD_HLI_A();
             case 0x26: // LD H, n8
@@ -121,6 +129,8 @@
                 return LD_A_HLI();
             case 0x2E: // LD L, n8
                 return LD_r_n(ref L);
+            case 0x31: // LD SP, n16
+                return LD_rr_nn(SP);
             case 0x32: // LD (HL-), A
                 return LD_HLD_A();
             case 0x36: // LD (HL), n8
@@ -255,16 +265,36 @@
                 return LD_r_HL(ref A);
             case 0x7F: // LD A, A
                 return LD_r_r(ref A, A);
+            case 0xC1: // POP BC
+                return POP_rr(ref B, ref C);
+            case 0xC5: // PUSH BC
+                return PUSH_rr(ref B, ref C);
+            case 0xD1: // POP DE
+                return POP_rr(ref D, ref E);
+            case 0xD5: // PUSH DE
+                return PUSH_rr(ref D, ref E);
             case 0xE0: // LDH (a8), A
                 return LDH_a8_A();
+            case 0xE1: // POP HL
+                return POP_rr(ref H, ref L);
             case 0xE2: // LDH (C), A
                 return LDH_C_A();
+            case 0xE5: // PUSH HL
+                return PUSH_rr(ref H, ref L);
             case 0xEA: // LD (a16), A
                 return LD_a16_A();
             case 0xF0: // LDH A, (a8)
                 return LDH_A_a8();
+            case 0xF1: // POP AF
+                return POP_AF();
             case 0xF2: // LDH A, (C)
                 return LDH_A_C();
+            case 0xF5: // PUSH AF
+                return PUSH_AF();
+            case 0xF8: // LD HL, SP+e8
+                return LD_HL_SP_e8();
+            case 0xF9: // LD SP, HL
+                return LD_SP_HL();
             case 0xFA: // LD A, (a16)
                 return LD_A_a16();
             default:
@@ -379,5 +409,66 @@
     {
         A = _mmu.Read(Fetch16());
         return 16;
+    }
+
+    // 16-bit load instructions 
+    private int LD_rr_nn(ushort rr)
+    {
+        rr = Fetch16();
+        return 12;
+    }
+
+    private int LD_a16_rr(ushort rr) // LD (a16), rr -> 0x09
+    {
+        rr = Fetch16();
+        _mmu.Write(rr, (byte)(rr & 0xFF)); // Low byte
+        _mmu.Write((ushort)(rr + 1), (byte)(rr >> 8)); // High byte
+        return 20;
+    }
+
+    private int LD_SP_HL() // LD SP, HL -> 0xF9
+    {
+        SP = HL;
+        return 8;
+    }
+
+    private int POP_rr(ref byte r1, ref byte r2)
+    {
+        r2 = _mmu.Read(SP++); // Low byte
+        r1 = _mmu.Read(SP++); // High byte
+        return 12;
+    }
+
+    private int POP_AF()
+    {
+        F = (byte)(_mmu.Read(SP++) & 0xF0); // Low byte (F) - only upper 4 bits are used
+        A = _mmu.Read(SP++); // High byte
+        return 12;
+    }
+
+    private int PUSH_rr(ref byte r1, ref byte r2)
+    {
+        _mmu.Write(--SP, r1); // High byte
+        _mmu.Write(--SP, r2); // Low byte
+        return 16;
+    }
+
+    private int PUSH_AF()
+    {
+        _mmu.Write(--SP, A); // High byte
+        _mmu.Write(--SP, (byte)(F & 0xF0)); // Low byte
+        return 16;
+    }
+
+    private int LD_HL_SP_e8() // LD HL, SP+e8 -> 0xF8
+    {
+        sbyte e8 = (sbyte)Fetch();
+        ushort result = (ushort)(SP + e8);
+        HL = result;
+        FlagZ = false;
+        FlagN = false;
+        FlagH = ((SP & 0x0F) + (e8 & 0x0F)) > 0x0F;
+        FlagC = ((SP & 0xFF) + (e8 & 0xFF)) > 0xFF;
+        return 12;
     }
 }
