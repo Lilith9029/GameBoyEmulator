@@ -3,6 +3,7 @@
     private byte[] _rom = new byte[0x8000]; // 32KB
     private byte[] _wram = new byte[0x2000]; // 8KB
     private byte[] _vram = new byte[0x2000]; // 8KB
+    private byte[] _eram = new byte[0x2000]; // 8KB
     private byte[] _oam = new byte[0xA0]; // 160 bytes
     private byte[] _io = new byte[0x80]; // 128 bytes
     private byte[] _hram = new byte[0x7F]; // 127 bytes
@@ -14,6 +15,8 @@
             return _rom[address - 0x0000];
         else if (address >= 0x8000 && address < 0xA000) // VRAM
             return _vram[address - 0x8000];
+        else if (address >= 0xA000 && address < 0xC000)
+            return _eram[address - 0xA000];
         else if (address >= 0xC000 && address < 0xE000) // WRAM
             return _wram[address - 0xC000];
         else if (address >= 0xE000 && address < 0xFE00) // Echo RAM
@@ -38,6 +41,8 @@
             _vram[address - 0x8000] = value;
         else if (address >= 0xC000 && address < 0xE000) // WRAM
             _wram[address - 0xC000] = value;
+        else if (address >= 0xA000 && address < 0xC000) // External RAM
+            _eram[address - 0xA000] = value;
         else if (address >= 0xE000 && address < 0xFE00) // Echo RAM
             _wram[address - 0xE000] = value;
         else if (address >= 0xFE00 && address < 0xFEA0) // OAM
