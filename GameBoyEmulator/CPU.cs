@@ -105,10 +105,10 @@
         _mmu.Write(--SP, (byte)(PC & 0xFF)); // Low byte
     }
 
-    public int ExecuteNext()
+    public int ExecuteInstruction()
     {
         byte opcode = Fetch();
-        
+
         switch (opcode)
         {
             case 0x00:
@@ -518,7 +518,7 @@
             case 0xCA: // JP Z, a16
                 return JP_Z_a16();
             case 0xCB: // CB prefix for extended instructions
-                return CB_PREFIX(); // Placeholder for CB-prefixed instructions
+                return CB_PREFIX(); // Placeholder for CB-prefixed instructions 
             case 0xCC: // CALL Z, a16
                 return CALL_Z_a16();
             case 0xCD: // CALL a16
@@ -534,7 +534,6 @@
             case 0xD2: // JP NC, a16
                 return JP_NC_a16();
             case 0xD3: // NOT USED
-                // Not used in the original Game 
             case 0xD4: // CALL NC, a16
                 return CALL_NC_a16();
             case 0xD5: // PUSH DE
@@ -550,11 +549,9 @@
             case 0xDA: // JP C, a16
                 return JP_C_a16();
             case 0xDB: // NOT USED
-                // Not used in the original Game 
             case 0xDC: // CALL C, a16
                 return CALL_C_a16();
             case 0xDD: // NOT USED
-                // Not used in the original Game 
             case 0xDE: // SBC A, n8
                 return SBC_A_n8();
             case 0xDF: // RST 18H
@@ -566,9 +563,7 @@
             case 0xE2: // LDH (C), A
                 return LDH_C_A();
             case 0xE3: // NOT USED
-                // Not used in the original Game 
             case 0xE4: // NOT USED
-                // Not used in the original Game 
             case 0xE5: // PUSH HL
                 return PUSH_rr(ref H, ref L);
             case 0xE6: // AND A, n8
@@ -582,11 +577,8 @@
             case 0xEA: // LD (a16), A
                 return LD_a16_A();
             case 0xEB: // NOT USED
-                // Not used in the original Game 
             case 0xEC: // NOT USED
-                // Not used in the original Game 
             case 0xED: // NOT USED
-                // Not used in the original Game 
             case 0xEE: // XOR A, n8
                 return XOR_A_n8();
             case 0xEF: // RST 28H
@@ -600,7 +592,6 @@
             case 0xF3: // DI
                 return DI();
             case 0xF4: // NOT USED
-                // Not used in the original Game 
             case 0xF5: // PUSH AF
                 return PUSH_AF();
             case 0xF6: // OR A, n8
@@ -616,9 +607,7 @@
             case 0xFB: // EI
                 return EI();
             case 0xFC: // NOT USED
-                // Not used in the original Game 
             case 0xFD: // NOT USED
-                // Not used in the original Game 
             case 0xFE: // CP A, n8
                 return CP_A_n8();
             case 0xFF: // RST 38H
@@ -626,7 +615,532 @@
             default:
                 Console.WriteLine($"Invalid opcode: 0x{opcode:X2} at PC: 0x{PC - 1:X4}");
                 _halted = true; // Halt on invalid opcode
-                return 4;       
+                return 0;
+        }
+    }
+
+    private int CB_PREFIX()
+    {
+        byte cbOpcode = Fetch();
+
+        switch (cbOpcode)
+        {
+            case 0x00: // RLC B
+                return RLC_r(ref B);
+            case 0x01: // RLC C
+                return RLC_r(ref C);
+            case 0x02: // RLC D
+                return RLC_r(ref D);
+            case 0x03: // RLC E
+                return RLC_r(ref E);
+            case 0x04: // RLC H
+                return RLC_r(ref H);
+            case 0x05: // RLC L
+                return RLC_r(ref L);
+            case 0x06: // RLC (HL)
+                return RLC_HL();
+            case 0x07: // RLC A
+                return RLC_r(ref A);
+            case 0x08: // RRC B
+                return RRC_r(ref B);
+            case 0x09: // RRC C
+                return RRC_r(ref C);
+            case 0x0A: // RRC D
+                return RRC_r(ref D);
+            case 0x0B: // RRC E
+                return RRC_r(ref E);
+            case 0x0C: // RRC H
+                return RRC_r(ref H);
+            case 0x0D: // RRC L
+                return RRC_r(ref L);
+            case 0x0E: // RRC (HL)
+                return RRC_HL();
+            case 0x0F: // RRC A
+                return RRC_r(ref A);
+            case 0x10: // RL B
+                return RL_r(ref B);
+            case 0x11: // RL C
+                return RL_r(ref C);
+            case 0x12: // RL D
+                return RL_r(ref D);
+            case 0x13: // RL E
+                return RL_r(ref E);
+            case 0x14: // RL H
+                return RL_r(ref H);
+            case 0x15: // RL L
+                return RL_r(ref L);
+            case 0x16: // RL (HL)
+                return RL_HL();
+            case 0x17: // RL A
+                return RL_r(ref A);
+            case 0x18: // RR B
+                return RR_r(ref B);
+            case 0x19: // RR C
+                return RR_r(ref C);
+            case 0x1A: // RR D
+                return RR_r(ref D);
+            case 0x1B: // RR E
+                return RR_r(ref E);
+            case 0x1C: // RR H
+                return RR_r(ref H);
+            case 0x1D: // RR L
+                return RR_r(ref L);
+            case 0x1E: // RR (HL)
+                return RR_HL();
+            case 0x1F: // RR A
+                return RR_r(ref A);
+            case 0x20: // SLA B
+                return SLA_r(ref B);
+            case 0x21: // SLA C
+                return SLA_r(ref C);
+            case 0x22: // SLA D
+                return SLA_r(ref D);
+            case 0x23: // SLA E
+                return SLA_r(ref E);
+            case 0x24: // SLA H
+                return SLA_r(ref H);
+            case 0x25: // SLA L
+                return SLA_r(ref L);
+            case 0x26: // SLA (HL)
+                return SLA_HL();
+            case 0x27: // SLA A
+                return SLA_r(ref A);
+            case 0x28: // SRA B
+                return SRA_r(ref B);
+            case 0x29: // SRA C
+                return SRA_r(ref C);
+            case 0x2A: // SRA D
+                return SRA_r(ref D);
+            case 0x2B: // SRA E
+                return SRA_r(ref E);
+            case 0x2C: // SRA H
+                return SRA_r(ref H);
+            case 0x2D: // SRA L
+                return SRA_r(ref L);
+            case 0x2E: // SRA (HL)
+                return SRA_HL();
+            case 0x2F: // SRA A
+                return SRA_r(ref A);
+            case 0x30: // SWAP B
+                return SWAP_r(ref B);
+            case 0x31: // SWAP C
+                return SWAP_r(ref C);
+            case 0x32: // SWAP D
+                return SWAP_r(ref D);
+            case 0x33: // SWAP E
+                return SWAP_r(ref E);
+            case 0x34: // SWAP H
+                return SWAP_r(ref H);
+            case 0x35: // SWAP L
+                return SWAP_r(ref L);
+            case 0x36: // SWAP (HL)
+                return SWAP_HL();
+            case 0x37: // SWAP A
+                return SWAP_r(ref A);
+            case 0x38: // SRL B
+                return SRL_r(ref B);
+            case 0x39: // SRL C
+                return SRL_r(ref C);
+            case 0x3A: // SRL D
+                return SRL_r(ref D);
+            case 0x3B: // SRL E
+                return SRL_r(ref E);
+            case 0x3C: // SRL H
+                return SRL_r(ref H);
+            case 0x3D: // SRL L
+                return SRL_r(ref L);
+            case 0x3E: // SRL (HL)
+                return SRL_HL();
+            case 0x3F: // SRL A
+                return SRL_r(ref A);
+            case 0x40: // BIT 0, B
+                return BIT_bit_r(0, B);
+            case 0x41: // BIT 0, C
+                return BIT_bit_r(0, C);
+            case 0x42: // BIT 0, D
+                return BIT_bit_r(0, D);
+            case 0x43: // BIT 0, E
+                return BIT_bit_r(0, E);
+            case 0x44: // BIT 0, H
+                return BIT_bit_r(0, H);
+            case 0x45: // BIT 0, L
+                return BIT_bit_r(0, L);
+            case 0x46: // BIT 0, (HL)
+                return BIT_bit_HL(0);
+            case 0x47: // BIT 0, A
+                return BIT_bit_r(0, A);
+            case 0x48: // BIT 1, B
+                return BIT_bit_r(1, B);
+            case 0x49: // BIT 1, C
+                return BIT_bit_r(1, C);
+            case 0x4A: // BIT 1, D
+                return BIT_bit_r(1, D);
+            case 0x4B: // BIT 1, E
+                return BIT_bit_r(1, E);
+            case 0x4C: // BIT 1, H
+                return BIT_bit_r(1, H);
+            case 0x4D: // BIT 1, L
+                return BIT_bit_r(1, L);
+            case 0x4E: // BIT 1, (HL)
+                return BIT_bit_HL(1);
+            case 0x4F: // BIT 1, A
+                return BIT_bit_r(1, A);
+            case 0x50: // BIT 2, B
+                return BIT_bit_r(2, B);
+            case 0x51: // BIT 2, C
+                return BIT_bit_r(2, C);
+            case 0x52: // BIT 2, D
+                return BIT_bit_r(2, D);
+            case 0x53: // BIT 2, E
+                return BIT_bit_r(2, E);
+            case 0x54: // BIT 2, H
+                return BIT_bit_r(2, H);
+            case 0x55: // BIT 2, L
+                return BIT_bit_r(2, L);
+            case 0x56: // BIT 2, (HL)
+                return BIT_bit_HL(2);
+            case 0x57: // BIT 2, A
+                return BIT_bit_r(2, A);
+            case 0x58: // BIT 3, B
+                return BIT_bit_r(3, B);
+            case 0x59: // BIT 3, C
+                return BIT_bit_r(3, C);
+            case 0x5A: // BIT 3, D
+                return BIT_bit_r(3, D);
+            case 0x5B: // BIT 3, E
+                return BIT_bit_r(3, E);
+            case 0x5C: // BIT 3, H
+                return BIT_bit_r(3, H);
+            case 0x5D: // BIT 3, L
+                return BIT_bit_r(3, L);
+            case 0x5E: // BIT 3, (HL)
+                return BIT_bit_HL(3);
+            case 0x5F: // BIT 3, A
+                return BIT_bit_r(3, A);
+            case 0x60: // BIT 4, B
+                return BIT_bit_r(4, B);
+            case 0x61: // BIT 4, C
+                return BIT_bit_r(4, C);
+            case 0x62: // BIT 4, D
+                return BIT_bit_r(4, D);
+            case 0x63: // BIT 4, E
+                return BIT_bit_r(4, E);
+            case 0x64: // BIT 4, H
+                return BIT_bit_r(4, H);
+            case 0x65: // BIT 4, L
+                return BIT_bit_r(4, L);
+            case 0x66: // BIT 4, (HL)
+                return BIT_bit_HL(4);
+            case 0x67: // BIT 4, A
+                return BIT_bit_r(4, A);
+            case 0x68: // BIT 5, B
+                return BIT_bit_r(5, B);
+            case 0x69: // BIT 5, C
+                return BIT_bit_r(5, C);
+            case 0x6A: // BIT 5, D
+                return BIT_bit_r(5, D);
+            case 0x6B: // BIT 5, E
+                return BIT_bit_r(5, E);
+            case 0x6C: // BIT 5, H
+                return BIT_bit_r(5, H);
+            case 0x6D: // BIT 5, L
+                return BIT_bit_r(5, L);
+            case 0x6E: // BIT 5, (HL)
+                return BIT_bit_HL(5);
+            case 0x6F: // BIT 5, A
+                return BIT_bit_r(5, A);
+            case 0x70: // BIT 6, B
+                return BIT_bit_r(6, B);
+            case 0x71: // BIT 6, C
+                return BIT_bit_r(6, C);
+            case 0x72: // BIT 6, D
+                return BIT_bit_r(6, D);
+            case 0x73: // BIT 6, E
+                return BIT_bit_r(6, E);
+            case 0x74: // BIT 6, H
+                return BIT_bit_r(6, H);
+            case 0x75: // BIT 6, L
+                return BIT_bit_r(6, L);
+            case 0x76: // BIT 6, (HL)
+                return BIT_bit_HL(6);
+            case 0x77: // BIT 6, A
+                return BIT_bit_r(6, A);
+            case 0x78: // BIT 7, B
+                return BIT_bit_r(7, B);
+            case 0x79: // BIT 7, C
+                return BIT_bit_r(7, C);
+            case 0x7A: // BIT 7, D
+                return BIT_bit_r(7, D);
+            case 0x7B: // BIT 7, E
+                return BIT_bit_r(7, E);
+            case 0x7C: // BIT 7, H
+                return BIT_bit_r(7, H);
+            case 0x7D: // BIT 7, L
+                return BIT_bit_r(7, L);
+            case 0x7E: // BIT 7, (HL)
+                return BIT_bit_HL(7);
+            case 0x7F: // BIT 7, A
+                return BIT_bit_r(7, A);
+            case 0x80: // RES 0, B
+                return RES_bit_r(0, ref B);
+            case 0x81: // RES 0, C
+                return RES_bit_r(0, ref C);
+            case 0x82: // RES 0, D
+                return RES_bit_r(0, ref D);
+            case 0x83: // RES 0, E
+                return RES_bit_r(0, ref E);
+            case 0x84: // RES 0, H
+                return RES_bit_r(0, ref H);
+            case 0x85: // RES 0, L
+                return RES_bit_r(0, ref L);
+            case 0x86: // RES 0, (HL)
+                return RES_bit_HL(0);
+            case 0x87: // RES 0, A
+                return RES_bit_r(0, ref A);
+            case 0x88: // RES 1, B
+                return RES_bit_r(1, ref B);
+            case 0x89: // RES 1, C
+                return RES_bit_r(1, ref C);
+            case 0x8A: // RES 1, D
+                return RES_bit_r(1, ref D);
+            case 0x8B: // RES 1, E
+                return RES_bit_r(1, ref E);
+            case 0x8C: // RES 1, H
+                return RES_bit_r(1, ref H);
+            case 0x8D: // RES 1, L
+                return RES_bit_r(1, ref L);
+            case 0x8E: // RES 1, (HL)
+                return RES_bit_HL(1);
+            case 0x8F: // RES 1, A
+                return RES_bit_r(1, ref A);
+            case 0x90: // RES 2, B
+                return RES_bit_r(2, ref B);
+            case 0x91: // RES 2, C
+                return RES_bit_r(2, ref C);
+            case 0x92: // RES 2, D
+                return RES_bit_r(2, ref D);
+            case 0x93: // RES 2, E
+                return RES_bit_r(2, ref E);
+            case 0x94: // RES 2, H
+                return RES_bit_r(2, ref H);
+            case 0x95: // RES 2, L
+                return RES_bit_r(2, ref L);
+            case 0x96: // RES 2, (HL)
+                return RES_bit_HL(2);
+            case 0x97: // RES 2, A
+                return RES_bit_r(2, ref A);
+            case 0x98: // RES 3, B
+                return RES_bit_r(3, ref B);
+            case 0x99: // RES 3, C
+                return RES_bit_r(3, ref C);
+            case 0x9A: // RES 3, D
+                return RES_bit_r(3, ref D);
+            case 0x9B: // RES 3, E
+                return RES_bit_r(3, ref E);
+            case 0x9C: // RES 3, H
+                return RES_bit_r(3, ref H);
+            case 0x9D: // RES 3, L
+                return RES_bit_r(3, ref L);
+            case 0x9E: // RES 3, (HL)
+                return RES_bit_HL(3);
+            case 0x9F: // RES 3, A
+                return RES_bit_r(3, ref A);
+            case 0xA0: // RES 4, B
+                return RES_bit_r(4, ref B);
+            case 0xA1: // RES 4, C
+                return RES_bit_r(4, ref C);
+            case 0xA2: // RES 4, D
+                return RES_bit_r(4, ref D);
+            case 0xA3: // RES 4, E
+                return RES_bit_r(4, ref E);
+            case 0xA4: // RES 4, H
+                return RES_bit_r(4, ref H);
+            case 0xA5: // RES 4, L
+                return RES_bit_r(4, ref L);
+            case 0xA6: // RES 4, (HL)
+                return RES_bit_HL(4);
+            case 0xA7: // RES 4, A
+                return RES_bit_r(4, ref A);
+            case 0xA8: // RES 5, B
+                return RES_bit_r(5, ref B);
+            case 0xA9: // RES 5, C
+                return RES_bit_r(5, ref C);
+            case 0xAA: // RES 5, D
+                return RES_bit_r(5, ref D);
+            case 0xAB: // RES 5, E
+                return RES_bit_r(5, ref E);
+            case 0xAC: // RES 5, H
+                return RES_bit_r(5, ref H);
+            case 0xAD: // RES 5, L
+                return RES_bit_r(5, ref L);
+            case 0xAE: // RES 5, (HL)
+                return RES_bit_HL(5);
+            case 0xAF: // RES 5, A
+                return RES_bit_r(5, ref A);
+            case 0xB0: // RES 6, B
+                return RES_bit_r(6, ref B);
+            case 0xB1: // RES 6, C
+                return RES_bit_r(6, ref C);
+            case 0xB2: // RES 6, D
+                return RES_bit_r(6, ref D);
+            case 0xB3: // RES 6, E
+                return RES_bit_r(6, ref E);
+            case 0xB4: // RES 6, H
+                return RES_bit_r(6, ref H);
+            case 0xB5: // RES 6, L
+                return RES_bit_r(6, ref L);
+            case 0xB6: // RES 6, (HL)
+                return RES_bit_HL(6);
+            case 0xB7: // RES 6, A
+                return RES_bit_r(6, ref A);
+            case 0xB8: // RES 7, B
+                return RES_bit_r(7, ref B);
+            case 0xB9: // RES 7, C
+                return RES_bit_r(7, ref C);
+            case 0xBA: // RES 7, D
+                return RES_bit_r(7, ref D);
+            case 0xBB: // RES 7, E
+                return RES_bit_r(7, ref E);
+            case 0xBC: // RES 7, H
+                return RES_bit_r(7, ref H);
+            case 0xBD: // RES 7, L
+                return RES_bit_r(7, ref L);
+            case 0xBE: // RES 7, (HL)
+                return RES_bit_HL(7);
+            case 0xBF: // RES 7, A
+                return RES_bit_r(7, ref A); 
+            case 0xC0: // SET 0, B
+                return SET_bit_r(0, ref B);
+            case 0xC1: // SET 0, C
+                return SET_bit_r(0, ref C);
+            case 0xC2: // SET 0, D
+                return SET_bit_r(0, ref D);
+            case 0xC3: // SET 0, E
+                return SET_bit_r(0, ref E);
+            case 0xC4: // SET 0, H
+                return SET_bit_r(0, ref H);
+            case 0xC5: // SET 0, L
+                return SET_bit_r(0, ref L);
+            case 0xC6: // SET 0, (HL)
+                return SET_bit_HL(0);
+            case 0xC7: // SET 0, A
+                return SET_bit_r(0, ref A);
+            case 0xC8: // SET 1, B
+                return SET_bit_r(1, ref B);
+            case 0xC9: // SET 1, C
+                return SET_bit_r(1, ref C);
+            case 0xCA: // SET 1, D
+                return SET_bit_r(1, ref D);
+            case 0xCB: // SET 1, E
+                return SET_bit_r(1, ref E);
+            case 0xCC: // SET 1, H
+                return SET_bit_r(1, ref H);
+            case 0xCD: // SET 1, L
+                return SET_bit_r(1, ref L);
+            case 0xCE: // SET 1, (HL)
+                return SET_bit_HL(1);
+            case 0xCF: // SET 1, A
+                return SET_bit_r(1, ref A); 
+            case 0xD0: // SET 2, B
+                return SET_bit_r(2, ref B);
+            case 0xD1: // SET 2, C
+                return SET_bit_r(2, ref C);
+            case 0xD2: // SET 2, D
+                return SET_bit_r(2, ref D);
+            case 0xD3: // SET 2, E
+                return SET_bit_r(2, ref E);
+            case 0xD4: // SET 2, H
+                return SET_bit_r(2, ref H);
+            case 0xD5: // SET 2, L
+                return SET_bit_r(2, ref L);
+            case 0xD6: // SET 2, (HL)
+                return SET_bit_HL(2);
+            case 0xD7: // SET 2, A
+                return SET_bit_r(2, ref A);
+            case 0xD8: // SET 3, B
+                return SET_bit_r(3, ref B);
+            case 0xD9: // SET 3, C
+                return SET_bit_r(3, ref C);
+            case 0xDA: // SET 3, D
+                return SET_bit_r(3, ref D);
+            case 0xDB: // SET 3, E
+                return SET_bit_r(3, ref E);
+            case 0xDC: // SET 3, H
+                return SET_bit_r(3, ref H);
+            case 0xDD: // SET 3, L
+                return SET_bit_r(3, ref L);
+            case 0xDE: // SET 3, (HL)
+                return SET_bit_HL(3);
+            case 0xDF: // SET 3, A
+                return SET_bit_r(3, ref A);
+            case 0xE0: // SET 4, B
+                return SET_bit_r(4, ref B);
+            case 0xE1: // SET 4, C
+                return SET_bit_r(4, ref C);
+            case 0xE2: // SET 4, D
+                return SET_bit_r(4, ref D);
+            case 0xE3: // SET 4, E
+                return SET_bit_r(4, ref E);
+            case 0xE4: // SET 4, H
+                return SET_bit_r(4, ref H);
+            case 0xE5: // SET 4, L
+                return SET_bit_r(4, ref L);
+            case 0xE6: // SET 4, (HL)
+                return SET_bit_HL(4);
+            case 0xE7: // SET 4, A
+                return SET_bit_r(4, ref A);
+            case 0xE8: // SET 5, B
+                return SET_bit_r(5, ref B);
+            case 0xE9: // SET 5, C
+                return SET_bit_r(5, ref C);
+            case 0xEA: // SET 5, D
+                return SET_bit_r(5, ref D);
+            case 0xEB: // SET 5, E
+                return SET_bit_r(5, ref E);
+            case 0xEC: // SET 5, H
+                return SET_bit_r(5, ref H);
+            case 0xED: // SET 5, L
+                return SET_bit_r(5, ref L);
+            case 0xEE: // SET 5, (HL)
+                return SET_bit_HL(5);
+            case 0xEF: // SET 5, A
+                return SET_bit_r(5, ref A);
+            case 0xF0: // SET 6, B
+                return SET_bit_r(6, ref B);
+            case 0xF1: // SET 6, C
+                return SET_bit_r(6, ref C);
+            case 0xF2: // SET 6, D
+                return SET_bit_r(6, ref D);
+            case 0xF3: // SET 6, E
+                return SET_bit_r(6, ref E);
+            case 0xF4: // SET 6, H
+                return SET_bit_r(6, ref H);
+            case 0xF5: // SET 6, L
+                return SET_bit_r(6, ref L);
+            case 0xF6: // SET 6, (HL)
+                return SET_bit_HL(6);
+            case 0xF7: // SET 6, A
+                return SET_bit_r(6, ref A);
+            case 0xF8: // SET 7, B
+                return SET_bit_r(7, ref B);
+            case 0xF9: // SET 7, C
+                return SET_bit_r(7, ref C);
+            case 0xFA: // SET 7, D
+                return SET_bit_r(7, ref D);
+            case 0xFB: // SET 7, E
+                return SET_bit_r(7, ref E);
+            case 0xFC: // SET 7, H
+                return SET_bit_r(7, ref H);
+            case 0xFD: // SET 7, L
+                return SET_bit_r(7, ref L);
+            case 0xFE: // SET 7, (HL)
+                return SET_bit_HL(7);
+            case 0xFF: // SET 7, A
+                return SET_bit_r(7, ref A);
+            default:
+                Console.WriteLine($"Invalid CB opcode: 0x{cbOpcode:X2} at PC: 0x{PC - 1:X4}");
+                _halted = true; // Halt on invalid opcode
+                return 0;
         }
     }
 
@@ -1291,7 +1805,7 @@
             {
                 adjustment |= 0x60;
                 newCarry = true;
-            } 
+            }
         }
         else // before SUB, SBC, CP
         {
@@ -1340,7 +1854,7 @@
         value++;
         set(value);
         // set((ushort)(get() + 1));
-        return 8; 
+        return 8;
     }
 
     private int ADD_HL_rr(ushort rr)
@@ -1377,7 +1891,7 @@
     // Misc / control instructions
     private int NOP()
     {
-        return 4;   
+        return 4;
     }
 
     private int STOP()
@@ -1392,13 +1906,6 @@
         return 4;
     }
 
-    private int CB_PREFIX()
-    {
-        byte cbOpcode = Fetch();
-        Console.WriteLine($"CB opcode not implemented: 0x{cbOpcode:X2}");
-        return 8;
-    }
-
     private int DI()
     {
         _ime = false;
@@ -1409,9 +1916,10 @@
     {
         _ime = true;
         return 4;
-    }   
+    }
 
     // 8-bit shift, rotate and bit instructions
+    // Rotate instructions
     private int RLCA()
     {
         FlagC = (A & 0x80) != 0;
@@ -1452,5 +1960,231 @@
         FlagN = false;
         FlagH = false;
         return 4;
+    }
+
+    // CB-prefixed shift, rotate and bit instructions
+    private int RLC_r(ref byte r)
+    {
+        FlagC = (r & 0x80) != 0;
+        r = (byte)((r << 1) | (r >> 7));
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int RLC_HL()
+    {
+        byte value = _mmu.Read(HL);
+        FlagC = (value & 0x80) != 0;
+        value = (byte)((value << 1) | (value >> 7));
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int RRC_r(ref byte r)
+    {
+        FlagC = (r & 0x01) != 0;
+        r = (byte)((r >> 1) | (r << 7));
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int RRC_HL()
+    {
+        byte value = _mmu.Read(HL);
+        FlagC = (value & 0x01) != 0;
+        value = (byte)((value >> 1) | (value << 7));
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int RL_r(ref byte r)
+    {
+        byte oldCarry = (byte)(FlagC ? 1 : 0);
+        FlagC = (r & 0x80) != 0;
+        r = (byte)((r << 1) | oldCarry);
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int RL_HL()
+    {
+        byte value = _mmu.Read(HL);
+        byte oldCarry = (byte)(FlagC ? 1 : 0);
+        FlagC = (value & 0x80) != 0;
+        value = (byte)((value << 1) | oldCarry);
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int RR_r(ref byte r)
+    {
+        byte oldCarry = (byte)(FlagC ? 1 : 0);
+        FlagC = (r & 0x01) != 0;
+        r = (byte)((r >> 1) | (oldCarry << 7));
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int RR_HL()
+    {
+        byte value = _mmu.Read(HL);
+        byte oldCarry = (byte)(FlagC ? 1 : 0);
+        FlagC = (value & 0x01) != 0;
+        value = (byte)((value >> 1) | (oldCarry << 7));
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int SLA_r(ref byte r)
+    {
+        FlagC = (r & 0x80) != 0;
+        r = (byte)(r << 1);
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int SLA_HL()
+    {
+        byte value = _mmu.Read(HL);
+        FlagC = (value & 0x80) != 0;
+        value = (byte)(value << 1);
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int SRA_r(ref byte r)
+    {
+        FlagC = (r & 0x01) != 0;
+        r = (byte)((r & 0x80) | (r >> 1)); // Preserve the MSB
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int SRA_HL()
+    {
+        byte value = _mmu.Read(HL);
+        FlagC = (value & 0x01) != 0;
+        value = (byte)((value & 0x80) | (value >> 1)); // Preserve the MSB
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int SWAP_r(ref byte r)
+    {
+        r = (byte)((r << 4) | (r >> 4));
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        FlagC = false;
+        return 8;
+    }
+
+    private int SWAP_HL()
+    {
+        byte value = _mmu.Read(HL);
+        value = (byte)((value << 4) | (value >> 4));
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        FlagC = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int SRL_r(ref byte r)
+    {
+        FlagC = (r & 0x01) != 0;
+        r = (byte)(r >> 1);
+        FlagZ = r == 0;
+        FlagN = false;
+        FlagH = false;
+        return 8;
+    }
+
+    private int SRL_HL()
+    {
+        byte value = _mmu.Read(HL);
+        FlagC = (value & 0x01) != 0;
+        value = (byte)(value >> 1);
+        FlagZ = value == 0;
+        FlagN = false;
+        FlagH = false;
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int BIT_bit_r(int bit, byte r)
+    {
+        FlagZ = (r & (1 << bit)) == 0;
+        FlagN = false;
+        FlagH = true;
+        return 8;
+    }
+
+    private int BIT_bit_HL(int bit)
+    {
+        byte value = _mmu.Read(HL);
+        FlagZ = (value & (1 << bit)) == 0;
+        FlagN = false;
+        FlagH = true;
+        return 12;
+    }
+
+    private int RES_bit_r(int bit, ref byte r)
+    {
+        r = (byte)(r & ~(1 << bit));
+        return 8;
+    }
+
+    private int RES_bit_HL(int bit)
+    {
+        byte value = _mmu.Read(HL);
+        value = (byte)(value & ~(1 << bit));
+        _mmu.Write(HL, value);
+        return 16;
+    }
+
+    private int SET_bit_r(int bit, ref byte r)
+    {
+        r = (byte)(r | (1 << bit));
+        return 8;
+    }
+
+    private int SET_bit_HL(int bit)
+    {
+        byte value = _mmu.Read(HL);
+        value = (byte)(value | (1 << bit));     
+        _mmu.Write(HL, value);
+        return 16;
     }
 }
