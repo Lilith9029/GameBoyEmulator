@@ -8,7 +8,7 @@
     {
         get => _f;
         set => _f = (byte)(value & 0xF0);
-        // Flags register: Z, N, H, C (Bit 7-4), lower 4 bits are always 0
+        // Flags register: Z, N, H, C
     }
 
     public ushort PC; // Program Counter
@@ -74,8 +74,8 @@
         BC = 0x0013;
         DE = 0x00D8;
         HL = 0x014D;
-        PC = 0x0100; // Start of the program after the header
-        SP = 0xFFFE; // Initial stack pointer
+        PC = 0x0100;
+        SP = 0xFFFE;
 
         _mmu = mmu;
     }
@@ -111,7 +111,7 @@
 
         switch (opcode)
         {
-            case 0x00:
+            case 0x00: // NOP
                 return NOP();
             case 0x01: // LD BC, n16
                 return LD_rr_nn(val => BC = val);
@@ -220,7 +220,7 @@
             case 0x35: // DEC (HL)
                 return DEC_HL();
             case 0x36: // LD (HL), n8
-                return LD_HL_n();
+                return LD_HL_n8();
             case 0x37: // SCF
                 return SCF();
             case 0x38: // JR C, e8
@@ -517,8 +517,8 @@
                 return RET();
             case 0xCA: // JP Z, a16
                 return JP_Z_a16();
-            case 0xCB: // CB prefix for extended instructions
-                return CB_PREFIX(); // Placeholder for CB-prefixed instructions 
+            case 0xCB: // CB PREFIX
+                return CB_PREFIX();
             case 0xCC: // CALL Z, a16
                 return CALL_Z_a16();
             case 0xCD: // CALL a16
@@ -534,6 +534,7 @@
             case 0xD2: // JP NC, a16
                 return JP_NC_a16();
             case 0xD3: // NOT USED
+                return DMG_Exit(opcode);
             case 0xD4: // CALL NC, a16
                 return CALL_NC_a16();
             case 0xD5: // PUSH DE
@@ -549,9 +550,11 @@
             case 0xDA: // JP C, a16
                 return JP_C_a16();
             case 0xDB: // NOT USED
+                return DMG_Exit(opcode);
             case 0xDC: // CALL C, a16
                 return CALL_C_a16();
             case 0xDD: // NOT USED
+                return DMG_Exit(opcode);
             case 0xDE: // SBC A, n8
                 return SBC_A_n8();
             case 0xDF: // RST 18H
@@ -563,7 +566,9 @@
             case 0xE2: // LDH (C), A
                 return LDH_C_A();
             case 0xE3: // NOT USED
+                return DMG_Exit(opcode);
             case 0xE4: // NOT USED
+                return DMG_Exit(opcode);
             case 0xE5: // PUSH HL
                 return PUSH_rr(ref H, ref L);
             case 0xE6: // AND A, n8
@@ -577,8 +582,11 @@
             case 0xEA: // LD (a16), A
                 return LD_a16_A();
             case 0xEB: // NOT USED
+                return DMG_Exit(opcode);
             case 0xEC: // NOT USED
+                return DMG_Exit(opcode);
             case 0xED: // NOT USED
+                return DMG_Exit(opcode);
             case 0xEE: // XOR A, n8
                 return XOR_A_n8();
             case 0xEF: // RST 28H
@@ -592,6 +600,7 @@
             case 0xF3: // DI
                 return DI();
             case 0xF4: // NOT USED
+                return DMG_Exit(opcode);
             case 0xF5: // PUSH AF
                 return PUSH_AF();
             case 0xF6: // OR A, n8
@@ -607,7 +616,9 @@
             case 0xFB: // EI
                 return EI();
             case 0xFC: // NOT USED
+                return DMG_Exit(opcode);
             case 0xFD: // NOT USED
+                return DMG_Exit(opcode);
             case 0xFE: // CP A, n8
                 return CP_A_n8();
             case 0xFF: // RST 38H
@@ -1008,7 +1019,7 @@
             case 0xBE: // RES 7, (HL)
                 return RES_bit_HL(7);
             case 0xBF: // RES 7, A
-                return RES_bit_r(7, ref A); 
+                return RES_bit_r(7, ref A);
             case 0xC0: // SET 0, B
                 return SET_bit_r(0, ref B);
             case 0xC1: // SET 0, C
@@ -1040,7 +1051,7 @@
             case 0xCE: // SET 1, (HL)
                 return SET_bit_HL(1);
             case 0xCF: // SET 1, A
-                return SET_bit_r(1, ref A); 
+                return SET_bit_r(1, ref A);
             case 0xD0: // SET 2, B
                 return SET_bit_r(2, ref B);
             case 0xD1: // SET 2, C
@@ -1169,7 +1180,7 @@
         return 8;
     }
 
-    private int LD_HL_n() // LD (HL), n8 -> 0x36
+    private int LD_HL_n8()
     {
         byte n8 = Fetch();
         _mmu.Write(HL, n8);
@@ -1188,53 +1199,53 @@
         return 8;
     }
 
-    private int LD_HLI_A() // LD (HL+), A -> 0x22
+    private int LD_HLI_A()
     {
         _mmu.Write(HL, A);
         HL++;
         return 8;
     }
 
-    private int LD_HLD_A() // LD (HL-), A -> 0x32
+    private int LD_HLD_A()
     {
         _mmu.Write(HL, A);
         HL--;
         return 8;
     }
 
-    private int LD_A_HLI() // LD A, (HL+) -> 0x2A
+    private int LD_A_HLI()
     {
         A = _mmu.Read(HL);
         HL++;
         return 8;
     }
 
-    private int LD_A_HLD() // LD A, (HL-) -> 0x3A
+    private int LD_A_HLD()
     {
         A = _mmu.Read(HL);
         HL--;
         return 8;
     }
 
-    private int LDH_a8_A() // LDH (a8), A -> 0xE0
+    private int LDH_a8_A()
     {
         _mmu.Write((ushort)(0xFF00 + Fetch()), A);
         return 12;
     }
 
-    private int LDH_A_a8() // LDH A, (a8) -> 0xF0
+    private int LDH_A_a8()
     {
         A = _mmu.Read((ushort)(0xFF00 + Fetch()));
         return 12;
     }
 
-    private int LDH_C_A() // LDH (C), A -> 0xE2
+    private int LDH_C_A()
     {
         _mmu.Write((ushort)(0xFF00 + C), A);
         return 8;
     }
 
-    private int LDH_A_C() // LDH A, (C) -> 0xF2
+    private int LDH_A_C()
     {
         A = _mmu.Read((ushort)(0xFF00 + C));
         return 8;
@@ -1259,7 +1270,7 @@
         return 12;
     }
 
-    private int LD_a16_rr(ushort rr) // LD (a16), rr -> 0x09
+    private int LD_a16_rr(ushort rr)
     {
         ushort addr = Fetch16();
         _mmu.Write(addr, (byte)(rr & 0xFF)); // Low byte
@@ -1267,7 +1278,7 @@
         return 20;
     }
 
-    private int LD_SP_HL() // LD SP, HL -> 0xF9
+    private int LD_SP_HL()
     {
         SP = HL;
         return 8;
@@ -1280,9 +1291,9 @@
         return 12;
     }
 
-    private int POP_AF() // POP AF -> 0xF1
+    private int POP_AF()
     {
-        F = (byte)(_mmu.Read(SP++) & 0xF0); // Low byte (F) - only upper 4 bits are used
+        F = (byte)(_mmu.Read(SP++) & 0xF0); // Low byte
         A = _mmu.Read(SP++); // High byte
         return 12;
     }
@@ -1294,14 +1305,14 @@
         return 16;
     }
 
-    private int PUSH_AF() // PUSH AF -> 0xF5
+    private int PUSH_AF()
     {
         _mmu.Write(--SP, A); // High byte
         _mmu.Write(--SP, (byte)(F & 0xF0)); // Low byte
         return 16;
     }
 
-    private int LD_HL_SP_e8() // LD HL, SP+e8 -> 0xF8
+    private int LD_HL_SP_e8()
     {
         sbyte e8 = (sbyte)Fetch();
         int result = SP + e8;
@@ -1314,97 +1325,97 @@
 
     //  Jumps / calls instructions
     // JP (Jump) instructions
-    private int JP_NZ_a16() // JP NZ, a16 -> 0xC2
+    private int JP_NZ_a16()
     {
         if (!FlagZ) { PC = Fetch16(); return 16; }
         PC += 2;
         return 12;
     }
 
-    private int JP_a16() // JP a16 -> 0xC3
+    private int JP_a16()
     {
         PC = Fetch16();
         return 16;
     }
 
-    private int JP_Z_a16() // JP Z, a16 -> 0xCA
+    private int JP_Z_a16()
     {
         if (FlagZ) { PC = Fetch16(); return 16; }
         PC += 2;
         return 12;
     }
 
-    private int JP_NC_a16() // JP NC, a16 -> 0xD2
+    private int JP_NC_a16()
     {
         if (!FlagC) { PC = Fetch16(); return 16; }
         PC += 2;
         return 12;
     }
 
-    private int JP_C_a16() // JP C, a16 -> 0xDA
+    private int JP_C_a16()
     {
         if (FlagC) { PC = Fetch16(); return 16; }
         PC += 2;
         return 12;
     }
 
-    private int JP_HL() // JP HL -> 0xE9
+    private int JP_HL()
     {
         PC = HL;
         return 4;
     }
 
     // JR (Relative Jump) instructions
-    private int JR_e8() // JR e8 -> 0x18
+    private int JR_e8()
     {
         PC += (ushort)(sbyte)Fetch();
         return 12;
     }
 
-    private int JR_NZ_e8() // JR NZ, e8 -> 0x20
+    private int JR_NZ_e8()
     {
         if (!FlagZ) { PC += (ushort)(sbyte)Fetch(); return 12; }
         PC++;
         return 8;
     }
 
-    private int JR_Z_e8() // JR Z, e8 -> 0x28
+    private int JR_Z_e8()
     {
         if (FlagZ) { PC += (ushort)(sbyte)Fetch(); return 12; }
         PC++;
         return 8;
     }
 
-    private int JR_NC_e8() // JR NC, e8 -> 0x30
+    private int JR_NC_e8()
     {
         if (!FlagC) { PC += (ushort)(sbyte)Fetch(); return 12; }
         PC++;
         return 8;
     }
 
-    private int JR_C_e8() // JR C, e8 -> 0x38
+    private int JR_C_e8()
     {
         if (FlagC) { PC += (ushort)(sbyte)Fetch(); return 12; }
         PC++;
         return 8;
     }
 
-    // CALL instructions
-    private int CALL_NZ_a16() // CALL NZ, a16 -> 0xC4
+    // CALL (Call) instructions
+    private int CALL_NZ_a16()
     {
         ushort addr = Fetch16();
         if (!FlagZ) { PushPC(); PC = addr; return 24; }
         return 12;
     }
 
-    private int CALL_Z_a16() // CALL Z, a16 -> 0xCC
+    private int CALL_Z_a16()
     {
         ushort addr = Fetch16();
         if (FlagZ) { PushPC(); PC = addr; return 24; }
         return 12;
     }
 
-    private int CALL_a16() // CALL a16 -> 0xCD
+    private int CALL_a16()
     {
         ushort addr = Fetch16();
         PushPC();
@@ -1412,55 +1423,55 @@
         return 24;
     }
 
-    private int CALL_NC_a16() // CALL NC, a16 -> 0xD4
+    private int CALL_NC_a16()
     {
         ushort addr = Fetch16();
         if (!FlagC) { PushPC(); PC = addr; return 24; }
         return 12;
     }
 
-    private int CALL_C_a16() // CALL C, a16 -> 0xDA
+    private int CALL_C_a16()
     {
         ushort addr = Fetch16();
         if (FlagC) { PushPC(); PC = addr; return 24; }
         return 12;
     }
 
-    // RET/RETI instructions
-    private int RET_NZ() // RET NZ -> 0xC0
+    // RET/RETI (Reset) instructions
+    private int RET_NZ()
     {
         if (!FlagZ) { PC = PopWord(); return 20; }
         return 8;
     }
 
-    private int RET_Z() // RET Z -> 0xC8
+    private int RET_Z()
     {
         if (FlagZ) { PC = PopWord(); return 20; }
         return 8;
     }
 
-    private int RET() // RET -> 0xC9
+    private int RET()
     {
         PC = PopWord();
         return 16;
     }
 
-    private int RET_NC() // RET NC -> 0xD0
+    private int RET_NC()
     {
         if (!FlagC) { PC = PopWord(); return 20; }
         return 8;
     }
 
-    private int RET_C() // RET C -> 0xD8
+    private int RET_C()
     {
         if (FlagC) { PC = PopWord(); return 20; }
         return 8;
     }
 
-    private int RETI() // RETI -> 0xD9
+    private int RETI()
     {
         PC = PopWord();
-        _ime = true; // Enable interrupts after returning
+        _ime = true;
         return 16;
     }
 
@@ -1485,7 +1496,7 @@
         return 4;
     }
 
-    private int ADD_A_HL() // ADD A, (HL) -> 0x86
+    private int ADD_A_HL()
     {
         byte value = _mmu.Read(HL);
         int result = A + value;
@@ -1498,7 +1509,7 @@
 
     }
 
-    private int ADD_A_n8() // ADD A, n8 -> 0xC6
+    private int ADD_A_n8()
     {
         byte n8 = Fetch();
         int result = A + n8;
@@ -1523,7 +1534,7 @@
         return 4;
     }
 
-    private int ADC_A_HL() // ADC A, (HL) -> 0x8E
+    private int ADC_A_HL()
     {
         byte value = _mmu.Read(HL);
         int carry = FlagC ? 1 : 0;
@@ -1536,7 +1547,7 @@
         return 8;
     }
 
-    private int ADC_A_n8() // ADC A, n8 -> 0xCE
+    private int ADC_A_n8()
     {
         byte n8 = Fetch();
         int carry = FlagC ? 1 : 0;
@@ -1561,7 +1572,7 @@
         return 4;
     }
 
-    private int SUB_A_HL() // SUB A, (HL) -> 0x96
+    private int SUB_A_HL()
     {
         byte value = _mmu.Read(HL);
         int result = A - value;
@@ -1573,7 +1584,7 @@
         return 8;
     }
 
-    private int SUB_A_n8() // SUB A, n8 -> 0xD6
+    private int SUB_A_n8()
     {
         byte n8 = Fetch();
         int result = A - n8;
@@ -1598,7 +1609,7 @@
         return 4;
     }
 
-    private int SBC_A_HL() // SBC A, (HL) -> 0x9E
+    private int SBC_A_HL()
     {
         byte value = _mmu.Read(HL);
         int carry = FlagC ? 1 : 0;
@@ -1611,7 +1622,7 @@
         return 8;
     }
 
-    private int SBC_A_n8() // SBC A, n8 -> 0xDE
+    private int SBC_A_n8()
     {
         byte n8 = Fetch();
         int carry = FlagC ? 1 : 0;
@@ -1635,7 +1646,7 @@
         return 4;
     }
 
-    private int AND_A_HL() // AND A, (HL) -> 0xA6
+    private int AND_A_HL()
     {
         A &= _mmu.Read(HL);
         FlagZ = A == 0;
@@ -1645,7 +1656,7 @@
         return 8;
     }
 
-    private int AND_A_n8() // AND A, n8 -> 0xE6
+    private int AND_A_n8()
     {
         A &= Fetch();
         FlagZ = A == 0;
@@ -1666,7 +1677,7 @@
         return 4;
     }
 
-    private int XOR_A_HL() // XOR A, (HL) -> 0xAE
+    private int XOR_A_HL()
     {
         A ^= _mmu.Read(HL);
         FlagZ = A == 0;
@@ -1676,7 +1687,7 @@
         return 8;
     }
 
-    private int XOR_A_n8() // XOR A, n8 -> 0xEE
+    private int XOR_A_n8()
     {
         A ^= Fetch();
         FlagZ = A == 0;
@@ -1697,7 +1708,7 @@
         return 4;
     }
 
-    private int OR_A_HL() // OR A, (HL) -> 0xB6
+    private int OR_A_HL()
     {
         A |= _mmu.Read(HL);
         FlagZ = A == 0;
@@ -1707,7 +1718,7 @@
         return 8;
     }
 
-    private int OR_A_n8() // OR A, n8 -> 0xF6
+    private int OR_A_n8()
     {
         A |= Fetch();
         FlagZ = A == 0;
@@ -1728,7 +1739,7 @@
         return 4;
     }
 
-    private int CP_A_HL() // CP A, (HL) -> 0xBE
+    private int CP_A_HL()
     {
         byte value = _mmu.Read(HL);
         int result = A - value;
@@ -1739,7 +1750,7 @@
         return 8;
     }
 
-    private int CP_A_n8() // CP A, n8 -> 0xFE
+    private int CP_A_n8()
     {
         byte n8 = Fetch();
         int result = A - n8;
@@ -1760,7 +1771,7 @@
         return 4;
     }
 
-    private int INC_HL() // INC (HL) -> 0x34
+    private int INC_HL()
     {
         byte value = _mmu.Read(HL);
         FlagH = (value & 0x0F) == 0x0F;
@@ -1781,7 +1792,7 @@
         return 4;
     }
 
-    private int DEC_HL() // DEC (HL) -> 0x35
+    private int DEC_HL()
     {
         byte value = _mmu.Read(HL);
         FlagH = (value & 0x0F) == 0x00;
@@ -1962,7 +1973,7 @@
         return 4;
     }
 
-    // CB-prefixed shift, rotate and bit instructions
+    // CB-prefixed
     private int RLC_r(ref byte r)
     {
         FlagC = (r & 0x80) != 0;
@@ -2183,8 +2194,15 @@
     private int SET_bit_HL(int bit)
     {
         byte value = _mmu.Read(HL);
-        value = (byte)(value | (1 << bit));     
+        value = (byte)(value | (1 << bit));
         _mmu.Write(HL, value);
         return 16;
+    }
+
+    private int DMG_Exit(byte opcode)
+    {
+        Console.WriteLine($"Invalid opcode: 0x{opcode:X2} at PC: 0x{PC - 1:X4}");
+        Environment.Exit(0);
+        return 0;
     }
 }

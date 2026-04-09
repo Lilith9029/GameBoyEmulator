@@ -15,7 +15,7 @@
             return _rom[address - 0x0000];
         else if (address >= 0x8000 && address < 0xA000) // VRAM
             return _vram[address - 0x8000];
-        else if (address >= 0xA000 && address < 0xC000)
+        else if (address >= 0xA000 && address < 0xC000) // External RAM
             return _eram[address - 0xA000];
         else if (address >= 0xC000 && address < 0xE000) // WRAM
             return _wram[address - 0xC000];
