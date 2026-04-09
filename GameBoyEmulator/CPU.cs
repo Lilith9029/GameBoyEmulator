@@ -15,6 +15,7 @@
     public ushort SP; // Stack Pointer
 
     public bool _ime; // Interrupt Master Enable
+    public bool _eiDelay; // EI instruction delay flag
     private bool _halted; // CPU halted state
 
     private MMU _mmu;
@@ -107,6 +108,8 @@
 
     public int ExecuteInstruction()
     {
+        if (_eiDelay) { _ime = true; _eiDelay = false; }
+
         byte opcode = Fetch();
 
         switch (opcode)
@@ -1925,7 +1928,7 @@
 
     private int EI()
     {
-        _ime = true;
+        _eiDelay = true; // Enable IME after next instruction
         return 4;
     }
 
