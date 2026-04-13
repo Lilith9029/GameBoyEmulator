@@ -1816,7 +1816,7 @@
         int adjustment = 0;
         bool newCarry = FlagC;
 
-        if (!FlagC) // before ADD, ADC
+        if (!FlagN) // before ADD, ADC
         {
             if (FlagH || (A & 0x0F) > 0x09) adjustment |= 0x06;
             if (FlagC || A > 0x99)
