@@ -49,11 +49,33 @@
             _oam[address - 0xFE00] = value;
         else if (address >= 0xFEA0 && address < 0xFF00) // Unusable memory
             return; // Do nothing
-        else if (address >= 0xFF00 && address < 0xFF80) // IO Registers
+        else if (address >= 0xFF00 && address < 0xFF80) // IO Registers 
+        {
             _io[address - 0xFF00] = value;
+
+            // Serial port 
+            if (address == 0xFF02 && value == 0x81)
+            {
+                char c = (char)_io[0x01];
+                Console.Write(c);
+                _io[0x02] = 0x00; // Clear the transfer start flag
+            }
+        }
         else if (address >= 0xFF80 && address < 0xFFFF) // HRAM
             _hram[address - 0xFF80] = value;
         else if (address == 0xFFFF) // Interrupt Enable Register
             _ie = value;
     }
+
+    public void IncrementDiv()
+    {
+        _io[0x04]++; // $FF04 - $FF00 = 0x04
+    }
+
+    public void RequestInterrupt(int bit)
+    {
+        byte flags = _io[0x0F]; // $FF0F - $FF00 = 0x0F
+        flags |= (byte)(1 << bit);
+        _io[0x0F] = flags;
+    }   
 }

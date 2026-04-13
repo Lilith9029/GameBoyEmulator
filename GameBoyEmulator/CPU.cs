@@ -110,7 +110,7 @@
     {
         if (_eiDelay) { _ime = true; _eiDelay = false; }
 
-        byte opcode = Fetch();
+        byte opcode = Fetch();      
 
         switch (opcode)
         {
@@ -2204,8 +2204,11 @@
 
     private int DMG_Exit(byte opcode)
     {
-        Console.WriteLine($"Invalid opcode: 0x{opcode:X2} at PC: 0x{PC - 1:X4}");
-        Environment.Exit(0);
+        Console.WriteLine($"[FATAL] Invalid opcode: 0x{opcode:X2}");
+        Console.WriteLine($"  PC=0x{(PC - 1):X4}  SP=0x{SP:X4}");
+        Console.WriteLine($"  AF=0x{AF:X4}  BC=0x{BC:X4}  DE=0x{DE:X4}  HL=0x{HL:X4}");
+
+        Environment.Exit(1);    
         return 0;
     }
 }
