@@ -31,7 +31,6 @@
 
         while (true)
         {
-            // In ra 20 instruction đầu tiên
             if (instructionCount < 20)
             {
                 Console.WriteLine($"PC=0x{_cpu.PC:X4} opcode=0x{_mmu.Read(_cpu.PC):X2}");
@@ -44,7 +43,6 @@
 
             instructionCount++;
             
-            // Dừng nếu quá lâu không thấy output
             if (instructionCount > 10_000_000)
             {
                 Console.WriteLine($"[TIMEOUT] PC=0x{_cpu.PC:X4}");
@@ -55,10 +53,8 @@
                 break;
             }
 
-            // Dừng nếu có jump ra khỏi ROM
             ushort prevPC = _cpu.PC;
 
-            // Bắt khi PC nhảy vào vùng không hợp lệ (không phải ROM, WRAM, HRAM)
             bool inROM = _cpu.PC < 0x8000;
             bool inWRAM = _cpu.PC >= 0xC000 && _cpu.PC < 0xE000;
             bool inHRAM = _cpu.PC >= 0xFF80 && _cpu.PC < 0xFFFF;
