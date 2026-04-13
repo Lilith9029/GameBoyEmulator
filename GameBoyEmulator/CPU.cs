@@ -108,7 +108,9 @@
 
     public int ExecuteInstruction()
     {
-        if (_eiDelay) { _ime = true; _eiDelay = false; }
+        if (_halted) return 4;
+
+        if (_eiDelay) { _eiDelay = false; _ime = true; }
 
         byte opcode = Fetch();      
 
@@ -1323,6 +1325,7 @@
         FlagN = false;
         FlagH = ((SP ^ e8 ^ result) & 0x10) != 0;
         FlagC = ((SP ^ e8 ^ result) & 0x100) != 0;
+        HL = (ushort)result;
         return 12;
     }
 
@@ -1370,36 +1373,37 @@
 
     // JR (Relative Jump) instructions
     private int JR_e8()
-    {
-        PC += (ushort)(sbyte)Fetch();
+    {   
+        sbyte offset = (sbyte)Fetch();
+        PC = (ushort)(PC + offset);
         return 12;
     }
 
     private int JR_NZ_e8()
     {
-        if (!FlagZ) { PC += (ushort)(sbyte)Fetch(); return 12; }
-        PC++;
+        sbyte offset = (sbyte)Fetch();
+        if (!FlagZ) { PC = (ushort)(PC + offset); return 12; }
         return 8;
     }
 
     private int JR_Z_e8()
     {
-        if (FlagZ) { PC += (ushort)(sbyte)Fetch(); return 12; }
-        PC++;
+        sbyte offset = (sbyte)Fetch();
+        if (FlagZ) { PC = (ushort)(PC + offset); return 12; }
         return 8;
     }
 
     private int JR_NC_e8()
     {
-        if (!FlagC) { PC += (ushort)(sbyte)Fetch(); return 12; }
-        PC++;
+        sbyte offset = (sbyte)Fetch();
+        if (!FlagC) { PC = (ushort)(PC + offset); return 12; }
         return 8;
     }
 
     private int JR_C_e8()
     {
-        if (FlagC) { PC += (ushort)(sbyte)Fetch(); return 12; }
-        PC++;
+        sbyte offset = (sbyte)Fetch();
+        if (FlagC) { PC = (ushort)(PC + offset); return 12; }
         return 8;
     }
 
@@ -2202,6 +2206,7 @@
         return 16;
     }
 
+    // ---
     private int DMG_Exit(byte opcode)
     {
         Console.WriteLine($"[FATAL] Invalid opcode: 0x{opcode:X2}");
@@ -2210,5 +2215,17 @@
 
         Environment.Exit(1);    
         return 0;
+    }
+
+    public void UnHault()
+    {
+        _halted = false;
+    }
+
+    public void CallInterrupt(ushort vector)
+    {
+        PushPC();
+        PC = vector;
+        /*_ime = false;*/
     }
 }

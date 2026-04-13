@@ -8,7 +8,7 @@
 
     public Timer(MMU mmu) { _mmu = mmu; }
 
-    public void Update(int cycles)
+    public void Tick(int cycles)
     {
         // DIV
         _divCounter += cycles;

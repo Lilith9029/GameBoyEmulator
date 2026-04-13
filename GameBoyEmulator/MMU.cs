@@ -1,5 +1,10 @@
 ﻿public class MMU
 {
+    public MMU(byte[] rom)
+    {
+        Array.Copy(rom, _rom, Math.Min(rom.Length, _rom.Length));
+    }
+
     private byte[] _rom = new byte[0x8000]; // 32KB
     private byte[] _wram = new byte[0x2000]; // 8KB
     private byte[] _vram = new byte[0x2000]; // 8KB
@@ -70,6 +75,11 @@
     public void IncrementDiv()
     {
         _io[0x04]++; // $FF04 - $FF00 = 0x04
+    }
+
+    public void IncrementLY(byte value)
+    {
+        _io[0x44] = value; // $FF44 - $FF00 = 0x44  
     }
 
     public void RequestInterrupt(int bit)
