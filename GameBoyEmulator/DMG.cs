@@ -3,6 +3,8 @@
     public CPU _cpu;
     public MMU _mmu;
     public Timer _timer;
+    public PPU _ppu;
+    public RendererDMG _renderer;
 
     private int _scanlineCycles = 0;
 
@@ -11,80 +13,40 @@
         _mmu = new MMU(rom);
         _cpu = new CPU(_mmu);
         _timer = new Timer(_mmu);
+        _ppu = new PPU(_mmu);
+        _renderer = new RendererDMG();
     }
-
-    /*public void Run()
-    {
-        while (true)
-        {
-            int cycles = _cpu.ExecuteInstruction();
-
-            _timer.Tick(cycles);
-            TickLY(cycles);
-            HandleInperrupts();
-        }
-    }*/
 
     public void Run()
     {
-        int instructionCount = 0;
+        const double TargetFrameTime = 1000.0 / 59.73; // ~16.75ms
+        const int CyclesPerFrame = 70224;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
 
-        while (true)
+        while (_renderer.HandleEvents())
         {
-            if (instructionCount < 20)
+            long startTime = sw.ElapsedMilliseconds;
+            int cyclesThisFrame = 0;
+
+            while (cyclesThisFrame < CyclesPerFrame)
             {
-                Console.WriteLine($"PC=0x{_cpu.PC:X4} opcode=0x{_mmu.Read(_cpu.PC):X2}");
+                int cycles = _cpu.ExecuteInstruction();
+                _timer.Tick(cycles);
+                _ppu.Tick(cycles);
+                HandleInperrupts();
+
+                cyclesThisFrame += cycles;
             }
 
-            int cycles = _cpu.ExecuteInstruction();
-            _timer.Tick(cycles);
-            TickLY(cycles);
-            HandleInperrupts();
+            _renderer.Render(_ppu.Framebuffer);
 
-            instructionCount++;
-            
-            if (instructionCount > 10_000_000)
+            while (sw.ElapsedMilliseconds - startTime < TargetFrameTime)
             {
-                Console.WriteLine($"[TIMEOUT] PC=0x{_cpu.PC:X4}");
-                Console.WriteLine($"  AF=0x{_cpu.AF:X4} BC=0x{_cpu.BC:X4}");
-                Console.WriteLine($"  DE=0x{_cpu.DE:X4} HL=0x{_cpu.HL:X4}");
-                Console.WriteLine($"  SP=0x{_cpu.SP:X4} IME={_cpu._ime}");
-                Console.WriteLine($"  IF=0x{_mmu.Read(0xFF0F):X2} IE=0x{_mmu.Read(0xFFFF):X2}");
-                break;
-            }
-
-            ushort prevPC = _cpu.PC;
-
-            bool inROM = _cpu.PC < 0x8000;
-            bool inWRAM = _cpu.PC >= 0xC000 && _cpu.PC < 0xE000;
-            bool inHRAM = _cpu.PC >= 0xFF80 && _cpu.PC < 0xFFFF;
-
-            if (!inROM && !inWRAM && !inHRAM)
-            {
-                Console.WriteLine($"[BAD PC] 0x{prevPC:X4} -> 0x{_cpu.PC:X4}  opcode=0x{_mmu.Read(prevPC):X2}");
-                Console.WriteLine($"  AF=0x{_cpu.AF:X4} BC=0x{_cpu.BC:X4}");
-                Console.WriteLine($"  DE=0x{_cpu.DE:X4} HL=0x{_cpu.HL:X4}");
-                Console.WriteLine($"  SP=0x{_cpu.SP:X4}");
-                break;
+                System.Threading.Thread.Sleep(0);
             }
         }
-    }
 
-    private void TickLY(int cycles)
-    {
-        _scanlineCycles += cycles;
-        if (_scanlineCycles >= 456)
-        {
-            _scanlineCycles -= 456;
-            byte ly = (byte)((_mmu.Read(0xFF44) + 1) % 154);
-            _mmu.IncrementLY(ly);
-
-            if (ly == 144)
-            {
-                byte iF = _mmu.Read(0xFF0F);
-                _mmu.Write(0xFF0F, (byte)(iF | 0x01));
-            }
-        }
+        _renderer.Destroy();
     }
 
     private void HandleInperrupts()
